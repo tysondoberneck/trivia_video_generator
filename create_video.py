@@ -44,13 +44,15 @@ def create_text_image(text, image_filename, size=(1080, 1920), fontsize=50):
         print(f"Error creating text image: {e}")
         raise
 
-def create_video(question, options, answer, question_audio_path, options_audio_path, answer_audio_path, output_filename, is_true_false):
+def create_video(question, options, answer, question_audio_path, options_intro_audio_path, options_audio_path, answer_audio_path, output_filename, is_true_false):
     try:
         print(f"Creating video: {output_filename}")
 
         question_audio_clip = AudioFileClip(question_audio_path)
+        options_intro_audio_clip = AudioFileClip(options_intro_audio_path)
         answer_audio_clip = AudioFileClip(answer_audio_path)
         duration_question = question_audio_clip.duration
+        duration_options_intro = options_intro_audio_clip.duration
         duration_answer = answer_audio_clip.duration
 
         if not is_true_false:
@@ -60,60 +62,52 @@ def create_video(question, options, answer, question_audio_path, options_audio_p
             options_audio_clip = None
             duration_options = 0
 
-        bg_clip = ColorClip(size=(1080, 1920), color=(255, 255, 255), duration=duration_question + duration_options + duration_answer)
+        bg_clip = ColorClip(size=(1080, 1920), color=(255, 255, 255), duration=duration_question + duration_options_intro + duration_options + duration_answer)
 
         question_image = "media/question_image.png"
         options_image = "media/options_image.png"
-        combined_image = "media/combined_image.png"
+        answer_image = "media/answer_image.png"
 
         create_text_image(question, question_image)
-        if not is_true_false:
-            create_text_image(options, options_image)
-            combined_text = f"{options}\n\nThe correct answer is: {answer}"
-        else:
-            combined_text = f"The correct answer is: {answer}"
-
-        create_text_image(combined_text, combined_image)
+        create_text_image("The options are:", options_image)
+        create_text_image(options, options_image)
+        create_text_image(answer, answer_image)
 
         question_clip = ImageClip(question_image, duration=duration_question).set_position('center')
-        combined_clip = ImageClip(combined_image, duration=duration_options + duration_answer).set_start(duration_question).set_position('center')
+        options_intro_clip = ImageClip(options_image, duration=duration_options_intro).set_start(duration_question).set_position('center')
+        options_clip = ImageClip(options_image, duration=duration_options).set_start(duration_question + duration_options_intro).set_position('center')
+        answer_clip = ImageClip(answer_image, duration=duration_answer).set_start(duration_question + duration_options_intro + duration_options).set_position('center').crossfadein(1)
 
-        audio_clips = [question_audio_clip, options_audio_clip, answer_audio_clip]
+        audio_clips = [question_audio_clip, options_intro_audio_clip, options_audio_clip, answer_audio_clip]
         audio_clips = [clip for clip in audio_clips if clip is not None]  # Filter out None values
         concatenated_audio = concatenate_audioclips(audio_clips)
 
-        video = CompositeVideoClip([bg_clip, question_clip, combined_clip]).set_audio(concatenated_audio)
+        video = CompositeVideoClip([bg_clip, question_clip, options_intro_clip, options_clip, answer_clip]).set_audio(concatenated_audio)
 
         video.write_videofile(output_filename, fps=24)
 
         os.remove(question_image)
-        if not is_true_false:
-            os.remove(options_image)
-        os.remove(combined_image)
-
-        os.remove(question_audio_path)
-        if options_audio_clip:
-            os.remove(options_audio_path)
-        os.remove(answer_audio_path)
-
+        os.remove(options_image)
+        os.remove(answer_image)
     except Exception as e:
         print(f"Error creating video: {e}")
         raise
 
 if __name__ == "__main__":
     try:
-        if len(sys.argv) != 9:
-            print("Usage: python create_video.py <question_file_path> <options_file_path> <answer_file_path> <question_audio_path> <options_audio_path> <answer_audio_path> <output_filename> <is_true_false>")
+        if len(sys.argv) != 10:
+            print("Usage: python create_video.py <question_file_path> <options_file_path> <answer_file_path> <question_audio_path> <options_intro_audio_path> <options_audio_path> <answer_audio_path> <output_filename> <is_true_false>")
             sys.exit(1)
 
         question_file_path = sys.argv[1]
         options_file_path = sys.argv[2]
         answer_file_path = sys.argv[3]
         question_audio_path = sys.argv[4]
-        options_audio_path = sys.argv[5]
-        answer_audio_path = sys.argv[6]
-        output_filename = sys.argv[7]
-        is_true_false = sys.argv[8].lower() == 'true'
+        options_intro_audio_path = sys.argv[5]
+        options_audio_path = sys.argv[6]
+        answer_audio_path = sys.argv[7]
+        output_filename = sys.argv[8]
+        is_true_false = sys.argv[9].lower() == 'true'
 
         print("Reading question, options, and answer from files")
         with open(question_file_path, 'r') as file:
@@ -123,8 +117,10 @@ if __name__ == "__main__":
         with open(answer_file_path, 'r') as file:
             answer = file.read()
 
-        create_video(question, options, answer, question_audio_path, options_audio_path, answer_audio_path, output_filename, is_true_false)
+        create_video(question, options, answer, question_audio_path, options_intro_audio_path, options_audio_path, answer_audio_path, output_filename, is_true_false)
 
+        for audio_file in [question_audio_path, options_intro_audio_path, options_audio_path, answer_audio_path]:
+            os.remove(audio_file)
     except Exception as e:
         print(f"Error in main: {e}")
         raise
