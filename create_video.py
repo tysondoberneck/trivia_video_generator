@@ -4,6 +4,7 @@ from PIL import Image, ImageDraw, ImageFont
 import numpy as np
 import sys
 import os
+from generate_metadata import generate_metadata, save_metadata
 
 def create_text_image(text, image_filename, size=(1080, 1920), fontsize=50, padding=50):
     try:
@@ -95,6 +96,11 @@ def create_video(question, options_intro, options, answer, question_audio_path, 
         if not is_true_false:
             os.remove(options_image)
         os.remove(answer_image)
+
+        # Generate and save metadata
+        metadata = generate_metadata(output_filename)
+        save_metadata(output_filename, metadata, 'metadata')
+        
     except Exception as e:
         print(f"Error creating video: {e}")
         raise

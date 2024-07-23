@@ -166,7 +166,7 @@ async function fetchTrivia() {
 
     console.log('Movie Trivia:');
 
-    const introText = `Welcome to ${selectedCategory} Trivia number ${videoFiles.length + 1}`;
+    const introText = `Welcome to ${selectedCategory} Trivia Quiz ${videoFiles.length + 1}`;
     const outroText = 'Thank you for watching! Comment below how many you answered correctly!';
 
     await generateAudio(introText, path.join(__dirname, 'media', 'intro_audio.mp3'));
