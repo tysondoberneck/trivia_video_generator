@@ -45,7 +45,7 @@ const difficulties = {
 };
 
 // Specify category, difficulty, and number of questions
-const selectedCategory = 'Animals'; // Change category name here
+const selectedCategory = 'Vehicles'; // Change category name here
 const category = categories[selectedCategory];
 const amount = 2; // Number of trivia questions
 const TRIVIA_URL = `https://opentdb.com/api.php?amount=${amount}&category=${category}&type=multiple`;
@@ -251,6 +251,21 @@ async function fetchTrivia() {
     ], outputFilename).catch(error => {
       console.error(`Failed to concatenate videos: ${error.message}`);
       throw error;
+    });
+
+    // Generate metadata for the final video
+    await new Promise((resolve, reject) => {
+      const command = `python generate_metadata.py ${outputFilename}`;
+      console.log(`Executing command: ${command}`);
+      exec(command, (error, stdout, stderr) => {
+        console.log(`Command stdout: ${stdout}`);
+        console.log(`Command stderr: ${stderr}`);
+        if (error) {
+          console.error(`Error: ${error.message}`);
+          return reject(error);
+        }
+        resolve();
+      });
     });
 
     // Clean up individual video files and media folder

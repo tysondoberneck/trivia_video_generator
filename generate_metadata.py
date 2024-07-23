@@ -1,28 +1,34 @@
 import os
 import json
+import sys
 
 def generate_metadata(video_filename):
-    # Extract the base name without extension
-    basename = os.path.basename(video_filename)
-    name, _ = os.path.splitext(basename)
-
-    # Generate metadata
+    # Generate metadata based on the video filename
+    base_name = os.path.basename(video_filename)
+    video_name, _ = os.path.splitext(base_name)
+    title = video_name.replace('_', ' ').title()
+    
     metadata = {
-        "title": name.replace('_', ' ').title(),
-        "description": f"This is the description for {name.replace('_', ' ').title()}.",
-        "tags": ["trivia", "quiz", "fun"],
-        "category_id": "22",  # Example category ID for "People & Blogs"
-        "privacy_status": "public"
+        "title": title,
+        "description": f"This is the description for {title}.",
+        "tags": [
+            "trivia",
+            "quiz",
+            "fun"
+        ],
+        "category_id": "22",  # Change to appropriate category ID
+        "privacy_status": "public"  # Set the desired privacy status
     }
 
-    # Save metadata to a JSON file
-    metadata_filename = os.path.join('metadata', f"{name}.json")
-    with open(metadata_filename, 'w') as metadata_file:
-        json.dump(metadata, metadata_file)
-
+    metadata_filename = f"metadata/{video_name}.json"
+    with open(metadata_filename, 'w') as f:
+        json.dump(metadata, f)
     print(f"Metadata saved to {metadata_filename}")
 
 if __name__ == "__main__":
-    # Example usage
-    video_filename = 'completed_videos/animals_video_1.mp4'  # Replace with actual video file path
+    if len(sys.argv) != 2:
+        print("Usage: python generate_metadata.py <video_filename>")
+        sys.exit(1)
+
+    video_filename = sys.argv[1]
     generate_metadata(video_filename)
