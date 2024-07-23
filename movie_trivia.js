@@ -82,10 +82,11 @@ async function generateAudio(text, filename) {
   }
 }
 
-function createVideo(question, options, answer, filenames, isTrueFalse) {
+function createVideo(question, options_intro, options, answer, filenames, isTrueFalse) {
   return new Promise((resolve, reject) => {
     const mediaDir = path.join(__dirname, 'media');
     const questionFilePath = path.join(mediaDir, 'question_text.txt');
+    const optionsIntroFilePath = path.join(mediaDir, 'options_intro_text.txt');
     const optionsFilePath = path.join(mediaDir, 'options_text.txt');
     const answerFilePath = path.join(mediaDir, 'answer_text.txt');
 
@@ -94,12 +95,13 @@ function createVideo(question, options, answer, filenames, isTrueFalse) {
     }
 
     fs.writeFileSync(questionFilePath, question, 'utf8');
+    fs.writeFileSync(optionsIntroFilePath, options_intro, 'utf8');
     if (!isTrueFalse) {
       fs.writeFileSync(optionsFilePath, options, 'utf8');
     }
     fs.writeFileSync(answerFilePath, answer, 'utf8');
 
-    const command = `python create_video.py ${questionFilePath} ${optionsFilePath} ${answerFilePath} ${filenames.join(' ')} media/trivia_video_${filenames[0].split('_').pop().split('.')[0]}.mp4 ${isTrueFalse}`;
+    const command = `python create_video.py ${questionFilePath} ${optionsIntroFilePath} ${optionsFilePath} ${answerFilePath} ${filenames.join(' ')} media/trivia_video_${filenames[0].split('_').pop().split('.')[0]}.mp4 ${isTrueFalse}`;
     console.log(`Executing command: ${command}`);
     
     exec(command, (error, stdout, stderr) => {
@@ -141,37 +143,19 @@ function delay(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-function getNextTriviaNumber(categoryName) {
-  const completedDir = path.join(__dirname, 'completed_videos');
-  if (!fs.existsSync(completedDir)) {
-    fs.mkdirSync(completedDir);
-  }
-
-  const files = fs.readdirSync(completedDir);
-  const regex = new RegExp(`${categoryName.toLowerCase().replace(/ /g, '_')}_video_(\\d+).mp4`);
-  let maxNumber = 0;
-
-  files.forEach(file => {
-    const match = file.match(regex);
-    if (match && match[1]) {
-      const number = parseInt(match[1], 10);
-      if (number > maxNumber) {
-        maxNumber = number;
-      }
-    }
-  });
-
-  return maxNumber + 1;
-}
-
 function getNextFinalVideoFilename(categoryName) {
   const completedDir = path.join(__dirname, 'completed_videos');
   if (!fs.existsSync(completedDir)) {
     fs.mkdirSync(completedDir);
   }
 
-  const nextNumber = getNextTriviaNumber(categoryName);
-  return path.join(completedDir, `${categoryName.toLowerCase().replace(/ /g, '_')}_video_${nextNumber}.mp4`);
+  let index = 1;
+  let filename;
+  do {
+    filename = path.join(completedDir, `${categoryName.toLowerCase().replace(/ /g, '_')}_video_${index}.mp4`);
+    index++;
+  } while (fs.existsSync(filename));
+  return filename;
 }
 
 async function fetchTrivia() {
@@ -182,8 +166,7 @@ async function fetchTrivia() {
 
     console.log('Movie Trivia:');
 
-    const nextTriviaNumber = getNextTriviaNumber(selectedCategory);
-    const introText = `Welcome to ${selectedCategory} Trivia number ${nextTriviaNumber}`;
+    const introText = `Welcome to ${selectedCategory} Trivia number ${videoFiles.length + 1}`;
     const outroText = 'Thank you for watching! Comment below how many you answered correctly!';
 
     await generateAudio(introText, path.join(__dirname, 'media', 'intro_audio.mp3'));
@@ -216,8 +199,8 @@ async function fetchTrivia() {
       console.log('---');
 
       let triviaQuestion = `Question ${index + 1}: ${decodedQuestion}`;
-      const triviaOptionsIntro = "The options are:";
-      let triviaOptions = options.slice(0, -1).join(', ') + `, or ${options[options.length - 1]}`;
+      let optionsIntro = 'The options are:';
+      let triviaOptions = options.map(option => `- ${option}`).join('\n');
       const triviaAnswer = `The correct answer is: ${decodedCorrectAnswer}`;
 
       const filenames = [
@@ -229,12 +212,12 @@ async function fetchTrivia() {
 
       // Generate audio files
       await generateAudio(triviaQuestion, filenames[0]);
-      await generateAudio(triviaOptionsIntro, filenames[1]);
+      await generateAudio(optionsIntro, filenames[1]);
       await generateAudio(triviaOptions, filenames[2]);
       await generateAudio(triviaAnswer, filenames[3]);
 
       // Create video for each trivia question
-      await createVideo(decodedQuestion, triviaOptions, triviaAnswer, filenames, false).catch(error => {
+      await createVideo(triviaQuestion, optionsIntro, triviaOptions, triviaAnswer, filenames, false).catch(error => {
         console.error(`Failed to create video for question ${index + 1}: ${error.message}`);
         throw error;
       });
@@ -274,6 +257,9 @@ async function fetchTrivia() {
     videoFiles.forEach(file => fs.unlinkSync(file));
     fs.unlinkSync(path.join(__dirname, 'media', 'videos.txt'));
     fs.unlinkSync(path.join(__dirname, 'media', 'question_text.txt'));
+    if (fs.existsSync(path.join(__dirname, 'media', 'options_intro_text.txt'))) {
+      fs.unlinkSync(path.join(__dirname, 'media', 'options_intro_text.txt'));
+    }
     if (fs.existsSync(path.join(__dirname, 'media', 'options_text.txt'))) {
       fs.unlinkSync(path.join(__dirname, 'media', 'options_text.txt'));
     }
