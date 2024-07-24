@@ -1,50 +1,8 @@
 from moviepy.editor import ImageClip, AudioFileClip, CompositeVideoClip, ColorClip, concatenate_videoclips
 from moviepy.audio.AudioClip import concatenate_audioclips
-from PIL import Image, ImageDraw, ImageFont
-import numpy as np
 import sys
 import os
-
-def create_text_image(text, image_filename, size=(1080, 1920), fontsize=100, padding=100):
-    try:
-        print(f"Creating text image: {image_filename}")
-        img = Image.new('RGB', size, color=(255, 255, 255))
-        d = ImageDraw.Draw(img)
-        font = ImageFont.truetype("arial.ttf", fontsize)
-
-        lines = []
-        width, height = size
-        max_width = width * 0.9
-
-        words = text.split(' ')
-        line = ''
-        for word in words:
-            test_line = f"{line} {word}".strip()
-            test_bbox = d.textbbox((0, 0), test_line, font=font)
-            test_width = test_bbox[2] - test_bbox[0]
-            if test_width <= max_width:
-                line = test_line
-            else:
-                lines.append(line)
-                line = word
-        lines.append(line)
-
-        total_text_height = sum([d.textbbox((0, 0), line, font=font)[3] - d.textbbox((0, 0), line, font=font)[1] for line in lines])
-        current_y = (height - total_text_height) / 2
-
-        for line in lines:
-            text_bbox = d.textbbox((0, 0), line, font=font)
-            textwidth, textheight = text_bbox[2] - text_bbox[0], text_bbox[3] - text_bbox[1]
-            x = (width - textwidth) / 2
-            d.text((x, current_y), line, fill=(0, 0, 0), font=font)
-            current_y += textheight
-
-        img_with_padding = Image.new('RGB', (width + padding*2, height + padding*2), color=(255, 255, 255))
-        img_with_padding.paste(img, (padding, padding))
-        img_with_padding.save(image_filename)
-    except Exception as e:
-        print(f"Error creating text image: {e}")
-        raise
+from utils import create_text_image  # Import the shared function
 
 def create_video(question, options_intro, options, answer, question_audio_path, options_intro_audio_path, options_audio_path, answer_audio_path, output_filename, is_true_false):
     try:
@@ -71,11 +29,11 @@ def create_video(question, options_intro, options, answer, question_audio_path, 
         options_image = "media/options_image.png"
         answer_image = "media/answer_image.png"
 
-        create_text_image(question, question_image, padding=50)
-        create_text_image(options_intro, options_intro_image, padding=50)
+        create_text_image(question, question_image, padding=100)  # Use the shared function
+        create_text_image(options_intro, options_intro_image, padding=100)  # Use the shared function
         if not is_true_false:
-            create_text_image(options, options_image, padding=50)
-        create_text_image(answer, answer_image, padding=50)
+            create_text_image(options, options_image, padding=100)  # Use the shared function
+        create_text_image(answer, answer_image, padding=100)  # Use the shared function
 
         question_clip = ImageClip(question_image, duration=duration_question).set_position('center')
         options_intro_clip = ImageClip(options_intro_image, duration=duration_options_intro).set_start(duration_question).set_position('center')
