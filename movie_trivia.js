@@ -45,7 +45,7 @@ const difficulties = {
 };
 
 // Specify category, difficulty, and number of questions
-const selectedCategory = 'Vehicles'; // Change category name here
+const selectedCategory = 'Mythology'; // Change category name here
 const category = categories[selectedCategory];
 const amount = 2; // Number of trivia questions
 const TRIVIA_URL = `https://opentdb.com/api.php?amount=${amount}&category=${category}&type=multiple`;

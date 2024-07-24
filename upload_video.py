@@ -11,7 +11,6 @@ from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
 from dotenv import load_dotenv
 import time
-import ssl
 
 # Load environment variables from .env file
 load_dotenv()
@@ -51,7 +50,7 @@ def get_authenticated_service():
             pickle.dump(creds, token)
     return build('youtube', 'v3', credentials=creds)
 
-def upload_video(youtube, video_file, metadata, max_retries=5):
+def upload_video(youtube, video_file, metadata):
     body = dict(
         snippet=dict(
             title=metadata['title'],
@@ -60,37 +59,22 @@ def upload_video(youtube, video_file, metadata, max_retries=5):
             categoryId=metadata['category_id']
         ),
         status=dict(
-            privacyStatus='public'  # Explicitly set privacyStatus to public
-        )
+            privacyStatus='public'  # Set the video to public
+        ),
+        # Set this field to True if the video is made for kids, False otherwise
+        selfDeclaredMadeForKids=False
     )
 
-    retries = 0
-    while retries < max_retries:
-        try:
-            insert_request = youtube.videos().insert(
-                part="snippet,status",
-                body=body,
-                media_body=video_file
-            )
-            response = insert_request.execute()
-            print(f"Uploaded video with ID: {response['id']}")
-            print(f"Full response: {response}")
-            return
-        except HttpError as e:
-            if e.resp.status in [500, 502, 503, 504]:
-                retries += 1
-                print(f"Retrying upload ({retries}/{max_retries}) due to server error: {e}")
-                time.sleep(2 ** retries)  # Exponential backoff
-            else:
-                print(f"An HTTP error {e.resp.status} occurred:\n{e.content}")
-                break
-        except ssl.SSLError as e:
-            retries += 1
-            print(f"Retrying upload ({retries}/{max_retries}) due to SSL error: {e}")
-            time.sleep(2 ** retries)  # Exponential backoff
-        except Exception as e:
-            print(f"An unexpected error occurred: {e}")
-            break
+    try:
+        insert_request = youtube.videos().insert(
+            part="snippet,status",
+            body=body,
+            media_body=video_file
+        )
+        response = insert_request.execute()
+        print(f"Uploaded video with ID: {response['id']}")
+    except HttpError as e:
+        print(f"An HTTP error {e.resp.status} occurred:\n{e.content}")
 
 class VideoHandler(FileSystemEventHandler):
     def __init__(self, youtube):
@@ -111,10 +95,9 @@ class VideoHandler(FileSystemEventHandler):
 
     def process(self, video_file):
         metadata_file = os.path.join('metadata', f"{os.path.splitext(os.path.basename(video_file))[0]}.json")
-        
+
         # Delay to ensure metadata file exists
         time.sleep(0.5)
-        
         if not os.path.exists(metadata_file):
             print(f"Metadata file not found for {video_file}")
             return
@@ -126,9 +109,9 @@ class VideoHandler(FileSystemEventHandler):
         metadata['title'] = self.parse_video_title(video_file)
 
         upload_video(self.youtube, video_file, metadata)
-        # os.remove(video_file)
-        # os.remove(metadata_file)
-        # print(f"Uploaded and removed {video_file} and {metadata_file}")
+        #os.remove(video_file)
+        #os.remove(metadata_file)
+        #print(f"Uploaded and removed {video_file} and {metadata_file}")
 
 def start_monitoring():
     youtube = get_authenticated_service()
