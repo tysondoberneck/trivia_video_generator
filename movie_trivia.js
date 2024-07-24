@@ -65,7 +65,7 @@ async function generateAudio(text, filename) {
     console.log(`Generating audio: ${filename}`);
     const response = await openai.audio.speech.create({
       model: "tts-1",
-      voice: "alloy",
+      voice: "fable",
       input: text
     });
 
