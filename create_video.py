@@ -5,7 +5,7 @@ import numpy as np
 import sys
 import os
 
-def create_text_image(text, image_filename, size=(1080, 1920), fontsize=50, padding=50):
+def create_text_image(text, image_filename, size=(1080, 1920), fontsize=100, padding=100):
     try:
         print(f"Creating text image: {image_filename}")
         img = Image.new('RGB', size, color=(255, 255, 255))

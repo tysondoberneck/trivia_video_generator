@@ -37,17 +37,17 @@ const categories = {
   'Entertainment: Cartoon & Animations': 32,
 };
 
-// Difficulty object
+// Difficulty object if i wanna use it later
 const difficulties = {
   'easy': 'easy',
   'medium': 'medium',
   'hard': 'hard'
 };
 
-// Specify category, difficulty, and number of questions
+// Specify category, and number of questions
 const selectedCategory = 'Mythology'; // Change category name here
 const category = categories[selectedCategory];
-const amount = 2; // Number of trivia questions
+const amount = 1; // Number of trivia questions
 const TRIVIA_URL = `https://opentdb.com/api.php?amount=${amount}&category=${category}&type=multiple`;
 
 function decodeHtmlEntities(text) {
@@ -166,7 +166,8 @@ async function fetchTrivia() {
 
     console.log('Movie Trivia:');
 
-    const introText = `Welcome to ${selectedCategory} Trivia Quiz ${videoFiles.length + 1}`;
+    const introText = //`Welcome to ${selectedCategory} Trivia Quiz ${videoFiles.length + 1}`; 
+    `Let's test how well you know ${selectedCategory}!`;
     const outroText = 'Thank you for watching! Comment below how many you answered correctly!';
 
     await generateAudio(introText, path.join(__dirname, 'media', 'intro_audio.mp3'));
