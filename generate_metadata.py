@@ -16,7 +16,7 @@ def generate_metadata(video_filename):
             "quiz",
             "fun"
         ],
-        "category_id": "22",  # Change to appropriate category ID
+        "category_id": "27",
         "privacy_status": "public"  # Set the desired privacy status
     }
 

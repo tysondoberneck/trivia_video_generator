@@ -59,13 +59,15 @@ def upload_video(youtube, video_file, metadata):
             categoryId=metadata['category_id']
         ),
         status=dict(
-            privacyStatus='public'  # Set the video to public
-        ),
-        # Set this field to True if the video is made for kids, False otherwise
-        selfDeclaredMadeForKids=False
+            privacyStatus='public',  # Set the video to public
+            selfDeclaredMadeForKids=False  # Automatically set "Not made for kids"
+        )
     )
 
     try:
+        print(f"Uploading video: {video_file}")
+        print(f"Video metadata: {json.dumps(body, indent=2)}")
+        
         insert_request = youtube.videos().insert(
             part="snippet,status",
             body=body,
@@ -73,6 +75,7 @@ def upload_video(youtube, video_file, metadata):
         )
         response = insert_request.execute()
         print(f"Uploaded video with ID: {response['id']}")
+        print(f"Video status: {response['status']}")
     except HttpError as e:
         print(f"An HTTP error {e.resp.status} occurred:\n{e.content}")
 
@@ -102,7 +105,7 @@ class VideoHandler(FileSystemEventHandler):
             print(f"Metadata file not found for {video_file}")
             return
         
-        with open(metadata_file, 'r') as f:
+        with open(metadata_file, 'r', encoding='utf-8') as f:
             metadata = json.load(f)
         
         # Generate the title from the video file name
