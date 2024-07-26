@@ -45,9 +45,9 @@ const difficulties = {
 };
 
 // Specify category, and number of questions
-const selectedCategory = 'Celebrities'; // Change category name here
+const selectedCategory = 'Animals'; // Change category name here
 const category = categories[selectedCategory];
-const amount = 3; // Number of trivia questions
+const amount = 4; // Number of trivia questions
 const TRIVIA_URL = `https://opentdb.com/api.php?amount=${amount}&category=${category}&type=multiple`;
 
 function decodeHtmlEntities(text) {
