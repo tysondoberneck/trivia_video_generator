@@ -1,0 +1,3 @@
+[] automate to run once a day
+[] create a shuffle to randomely choose a category and make that video
+[] add background music

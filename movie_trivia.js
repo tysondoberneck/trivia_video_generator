@@ -4,60 +4,49 @@ const fs = require('fs');
 const path = require('path');
 require('dotenv').config();
 const { OpenAI } = require('openai');
+const he = require('he');
+
 
 const apiKey = process.env.api_key;
 const openai = new OpenAI({ apiKey });
 
-// Categories object
+// Categories object with shortened names
 const categories = {
-  'any': 0,
-  'General Knowledge': 9,
-  'Entertainment: Books': 10,
-  'Entertainment: Film': 11,
-  'Entertainment: Music': 12,
-  'Entertainment: Musicals & Theatres': 13,
-  'Entertainment: Television': 14,
-  'Entertainment: Video Games': 15,
-  'Entertainment: Board Games': 16,
-  'Science & Nature': 17,
-  'Science: Computers': 18,
-  'Science: Mathematics': 19,
-  'Mythology': 20,
-  'Sports': 21,
-  'Geography': 22,
-  'History': 23,
-  'Politics': 24,
-  'Art': 25,
-  'Celebrities': 26,
-  'Animals': 27,
-  'Vehicles': 28,
-  'Entertainment: Comics': 29,
-  'Science: Gadgets': 30,
-  'Entertainment: Japanese Anime & Manga': 31,
-  'Entertainment: Cartoon & Animations': 32,
+  'any': { id: 0, fullName: 'any' },
+  'General Knowledge': { id: 9, fullName: 'General Knowledge' },
+  'Books': { id: 10, fullName: 'Entertainment: Books' },
+  'Film': { id: 11, fullName: 'Entertainment: Film' },
+  'Music': { id: 12, fullName: 'Entertainment: Music' },
+  'Musicals and Theatres': { id: 13, fullName: 'Entertainment: Musicals & Theatres' },
+  'Television': { id: 14, fullName: 'Entertainment: Television' },
+  'Video Games': { id: 15, fullName: 'Entertainment: Video Games' },
+  'Board Games': { id: 16, fullName: 'Entertainment: Board Games' },
+  'Science and Nature': { id: 17, fullName: 'Science & Nature' },
+  'Computers': { id: 18, fullName: 'Science: Computers' },
+  'Mathematics': { id: 19, fullName: 'Science: Mathematics' },
+  'Mythology': { id: 20, fullName: 'Mythology' },
+  'Sports': { id: 21, fullName: 'Sports' },
+  'Geography': { id: 22, fullName: 'Geography' },
+  'History': { id: 23, fullName: 'History' },
+  'Politics': { id: 24, fullName: 'Politics' },
+  'Art': { id: 25, fullName: 'Art' },
+  'Celebrities': { id: 26, fullName: 'Celebrities' },
+  'Animals': { id: 27, fullName: 'Animals' },
+  'Vehicles': { id: 28, fullName: 'Vehicles' },
+  'Comics': { id: 29, fullName: 'Entertainment: Comics' },
+  'Gadgets': { id: 30, fullName: 'Science: Gadgets' },
+  'Japanese Anime and Manga': { id: 31, fullName: 'Entertainment: Japanese Anime & Manga' },
+  'Cartoon and Animations': { id: 32, fullName: 'Entertainment: Cartoon & Animations' },
 };
 
-// Difficulty object if i wanna use it later
-const difficulties = {
-  'easy': 'easy',
-  'medium': 'medium',
-  'hard': 'hard'
-};
-
-// Specify category, and number of questions
-const selectedCategory = 'Animals'; // Change category name here
+// Specify category and number of questions
+const selectedCategory = 'Mythology'; // Change category name here
 const category = categories[selectedCategory];
-const amount = 4; // Number of trivia questions
-const TRIVIA_URL = `https://opentdb.com/api.php?amount=${amount}&category=${category}&type=multiple`;
+const amount = 1; // Number of trivia questions
+const TRIVIA_URL = `https://opentdb.com/api.php?amount=${amount}&category=${category.id}&type=multiple`;
 
 function decodeHtmlEntities(text) {
-  return text.replace(/&quot;/g, '"')
-             .replace(/&#039;/g, "'")
-             .replace(/&amp;/g, '&')
-             .replace(/&lt;/g, '<')
-             .replace(/&gt;/g, '>')
-             .replace(/&nbsp;/g, ' ')
-             .replace(/&apos;/g, "'");
+  return he.decode(text);  // Use he library to decode HTML entities
 }
 
 async function generateAudio(text, filename) {
@@ -166,8 +155,7 @@ async function fetchTrivia() {
 
     console.log('Movie Trivia:');
 
-    const introText = //`Welcome to ${selectedCategory} Trivia Quiz ${videoFiles.length + 1}`; 
-    `Let's test how well you know ${selectedCategory}!`;
+    const introText = `Let's test how well you know ${selectedCategory}!`;
     const outroText = 'Thank you for watching! Comment below how many you answered correctly!';
 
     await generateAudio(introText, path.join(__dirname, 'media', 'intro_audio.mp3'));
@@ -201,7 +189,13 @@ async function fetchTrivia() {
 
       let triviaQuestion = `Question ${index + 1}: ${decodedQuestion}`;
       let optionsIntro = 'The options are:';
-      let triviaOptions = options.map(option => `- ${option}`).join('\n');
+
+      // Create the options text for the audio with commas, "and", and "..."
+      let triviaOptionsAudio = options.slice(0, -1).join(',,,,,, ') + ', and ' + options[options.length - 1] + '........';
+
+      // Create the options text for the image without commas, "and", and "..."
+      let triviaOptionsText = options.map(option => `- ${option}`).join('\n');
+
       const triviaAnswer = `The correct answer is: ${decodedCorrectAnswer}`;
 
       const filenames = [
@@ -214,11 +208,11 @@ async function fetchTrivia() {
       // Generate audio files
       await generateAudio(triviaQuestion, filenames[0]);
       await generateAudio(optionsIntro, filenames[1]);
-      await generateAudio(triviaOptions, filenames[2]);
+      await generateAudio(triviaOptionsAudio, filenames[2]);
       await generateAudio(triviaAnswer, filenames[3]);
 
       // Create video for each trivia question
-      await createVideo(triviaQuestion, optionsIntro, triviaOptions, triviaAnswer, filenames, false).catch(error => {
+      await createVideo(triviaQuestion, optionsIntro, triviaOptionsText, triviaAnswer, filenames, false).catch(error => {
         console.error(`Failed to create video for question ${index + 1}: ${error.message}`);
         throw error;
       });

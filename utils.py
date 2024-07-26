@@ -1,6 +1,6 @@
 from PIL import Image, ImageDraw, ImageFont
 
-def create_text_image(text, image_filename, size=(1080, 1920), fontsize=100, padding=100):
+def create_text_image(text, image_filename, size=(1080, 1920), fontsize=100, padding=200):
     try:
         print(f"Creating text image: {image_filename}")
         img = Image.new('RGB', size, color=(255, 255, 255))
