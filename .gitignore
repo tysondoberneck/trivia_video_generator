@@ -7,3 +7,5 @@ package.json
 token.pickle
 __pycache__
 metadata
+client_secrets.json
+cloud_upload_video.py

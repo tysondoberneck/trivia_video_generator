@@ -4,8 +4,7 @@ const fs = require('fs');
 const path = require('path');
 require('dotenv').config();
 const { OpenAI } = require('openai');
-const he = require('he');
-
+const he = require('he');  // Import the he library
 
 const apiKey = process.env.api_key;
 const openai = new OpenAI({ apiKey });
@@ -17,11 +16,11 @@ const categories = {
   'Books': { id: 10, fullName: 'Entertainment: Books' },
   'Film': { id: 11, fullName: 'Entertainment: Film' },
   'Music': { id: 12, fullName: 'Entertainment: Music' },
-  'Musicals and Theatres': { id: 13, fullName: 'Entertainment: Musicals & Theatres' },
+  'Musicals & Theatres': { id: 13, fullName: 'Entertainment: Musicals & Theatres' },
   'Television': { id: 14, fullName: 'Entertainment: Television' },
   'Video Games': { id: 15, fullName: 'Entertainment: Video Games' },
   'Board Games': { id: 16, fullName: 'Entertainment: Board Games' },
-  'Science and Nature': { id: 17, fullName: 'Science & Nature' },
+  'Science & Nature': { id: 17, fullName: 'Science & Nature' },
   'Computers': { id: 18, fullName: 'Science: Computers' },
   'Mathematics': { id: 19, fullName: 'Science: Mathematics' },
   'Mythology': { id: 20, fullName: 'Mythology' },
@@ -35,14 +34,14 @@ const categories = {
   'Vehicles': { id: 28, fullName: 'Vehicles' },
   'Comics': { id: 29, fullName: 'Entertainment: Comics' },
   'Gadgets': { id: 30, fullName: 'Science: Gadgets' },
-  'Japanese Anime and Manga': { id: 31, fullName: 'Entertainment: Japanese Anime & Manga' },
-  'Cartoon and Animations': { id: 32, fullName: 'Entertainment: Cartoon & Animations' },
+  'Japanese Anime & Manga': { id: 31, fullName: 'Entertainment: Japanese Anime & Manga' },
+  'Cartoon & Animations': { id: 32, fullName: 'Entertainment: Cartoon & Animations' },
 };
 
 // Specify category and number of questions
-const selectedCategory = 'Mythology'; // Change category name here
+const selectedCategory = 'Japanese Anime & Manga'; // Change category name here
 const category = categories[selectedCategory];
-const amount = 1; // Number of trivia questions
+const amount = 4; // Number of trivia questions
 const TRIVIA_URL = `https://opentdb.com/api.php?amount=${amount}&category=${category.id}&type=multiple`;
 
 function decodeHtmlEntities(text) {
@@ -93,7 +92,7 @@ function createVideo(question, options_intro, options, answer, filenames, isTrue
     const command = `python create_video.py ${questionFilePath} ${optionsIntroFilePath} ${optionsFilePath} ${answerFilePath} ${filenames.join(' ')} media/trivia_video_${filenames[0].split('_').pop().split('.')[0]}.mp4 ${isTrueFalse}`;
     console.log(`Executing command: ${command}`);
     
-    exec(command, (error, stdout, stderr) => {
+    exec(command, { encoding: 'utf8' }, (error, stdout, stderr) => {
       console.log(`Command stdout: ${stdout}`);
       console.log(`Command stderr: ${stderr}`);
       if (error) {
@@ -109,14 +108,14 @@ function concatenateVideos(videoFiles, outputFilename) {
   return new Promise((resolve, reject) => {
     const listFilePath = path.join(__dirname, 'media', 'videos.txt');
     const listFileContent = videoFiles.map(file => `file '${path.resolve(file)}'`).join('\n');
-    fs.writeFileSync(listFilePath, listFileContent);
+    fs.writeFileSync(listFilePath, listFileContent, 'utf8');
 
     console.log(`videos.txt content:\n${listFileContent}`); // Log the content of videos.txt
 
     const command = `ffmpeg -y -f concat -safe 0 -i ${listFilePath} -c copy ${outputFilename}`;
     console.log(`Executing command: ${command}`);
     
-    exec(command, (error, stdout, stderr) => {
+    exec(command, { encoding: 'utf8' }, (error, stdout, stderr) => {
       console.log(`Command stdout: ${stdout}`);
       console.log(`Command stderr: ${stderr}`);
       if (error) {
@@ -165,7 +164,7 @@ async function fetchTrivia() {
     await new Promise((resolve, reject) => {
       const command = `python create_intro_outro_video.py "${introText}" "media/intro_audio.mp3" "media/intro_video.mp4"`;
       console.log(`Executing command: ${command}`);
-      exec(command, (error, stdout, stderr) => {
+      exec(command, { encoding: 'utf8' }, (error, stdout, stderr) => {
         console.log(`Command stdout: ${stdout}`);
         console.log(`Command stderr: ${stderr}`);
         if (error) {
@@ -191,7 +190,7 @@ async function fetchTrivia() {
       let optionsIntro = 'The options are:';
 
       // Create the options text for the audio with commas, "and", and "..."
-      let triviaOptionsAudio = options.slice(0, -1).join(',,,,,, ') + ', and ' + options[options.length - 1] + '........';
+      let triviaOptionsAudio = options.slice(0, -1).join(', ') + ', and ' + options[options.length - 1] + '...';
 
       // Create the options text for the image without commas, "and", and "..."
       let triviaOptionsText = options.map(option => `- ${option}`).join('\n');
@@ -225,7 +224,7 @@ async function fetchTrivia() {
     await new Promise((resolve, reject) => {
       const command = `python create_intro_outro_video.py "${outroText}" "media/outro_audio.mp3" "media/outro_video.mp4"`;
       console.log(`Executing command: ${command}`);
-      exec(command, (error, stdout, stderr) => {
+      exec(command, { encoding: 'utf8' }, (error, stdout, stderr) => {
         console.log(`Command stdout: ${stdout}`);
         console.log(`Command stderr: ${stderr}`);
         if (error) {
@@ -252,7 +251,7 @@ async function fetchTrivia() {
     await new Promise((resolve, reject) => {
       const command = `python generate_metadata.py ${outputFilename}`;
       console.log(`Executing command: ${command}`);
-      exec(command, (error, stdout, stderr) => {
+      exec(command, { encoding: 'utf8' }, (error, stdout, stderr) => {
         console.log(`Command stdout: ${stdout}`);
         console.log(`Command stderr: ${stderr}`);
         if (error) {
