@@ -16,11 +16,11 @@ const categories = {
   'Books': { id: 10, fullName: 'Entertainment: Books' },
   'Film': { id: 11, fullName: 'Entertainment: Film' },
   'Music': { id: 12, fullName: 'Entertainment: Music' },
-  'Musicals & Theatres': { id: 13, fullName: 'Entertainment: Musicals & Theatres' },
+  'Musicals and Theatres': { id: 13, fullName: 'Entertainment: Musicals & Theatres' },
   'Television': { id: 14, fullName: 'Entertainment: Television' },
   'Video Games': { id: 15, fullName: 'Entertainment: Video Games' },
   'Board Games': { id: 16, fullName: 'Entertainment: Board Games' },
-  'Science & Nature': { id: 17, fullName: 'Science & Nature' },
+  'Science and Nature': { id: 17, fullName: 'Science & Nature' },
   'Computers': { id: 18, fullName: 'Science: Computers' },
   'Mathematics': { id: 19, fullName: 'Science: Mathematics' },
   'Mythology': { id: 20, fullName: 'Mythology' },
@@ -34,14 +34,14 @@ const categories = {
   'Vehicles': { id: 28, fullName: 'Vehicles' },
   'Comics': { id: 29, fullName: 'Entertainment: Comics' },
   'Gadgets': { id: 30, fullName: 'Science: Gadgets' },
-  'Japanese Anime & Manga': { id: 31, fullName: 'Entertainment: Japanese Anime & Manga' },
-  'Cartoon & Animations': { id: 32, fullName: 'Entertainment: Cartoon & Animations' },
+  'Japanese Anime and Manga': { id: 31, fullName: 'Entertainment: Japanese Anime & Manga' },
+  'Cartoon and Animations': { id: 32, fullName: 'Entertainment: Cartoon & Animations' },
 };
 
 // Specify category and number of questions
-const selectedCategory = 'Japanese Anime & Manga'; // Change category name here
+const selectedCategory = 'Politics'; // Change category name here
 const category = categories[selectedCategory];
-const amount = 4; // Number of trivia questions
+const amount = 3; // Number of trivia questions
 const TRIVIA_URL = `https://opentdb.com/api.php?amount=${amount}&category=${category.id}&type=multiple`;
 
 function decodeHtmlEntities(text) {

@@ -1,6 +1,6 @@
 from PIL import Image, ImageDraw, ImageFont
 
-def create_text_image(text, image_filename, size=(1080, 1920), fontsize=100, padding=200):
+def create_text_image(text, image_filename, size=(1080, 1920), fontsize=100, padding=200, line_spacing=10):
     try:
         print(f"Creating text image: {image_filename}")
         img = Image.new('RGB', size, color=(255, 255, 255))
@@ -9,7 +9,7 @@ def create_text_image(text, image_filename, size=(1080, 1920), fontsize=100, pad
 
         lines = []
         width, height = size
-        max_width = width * 0.9
+        max_width = width * 0.8  # Adjust max_width for increased left and right padding
 
         words = text.split(' ')
         line = ''
@@ -24,7 +24,7 @@ def create_text_image(text, image_filename, size=(1080, 1920), fontsize=100, pad
                 line = word
         lines.append(line)
 
-        total_text_height = sum([d.textbbox((0, 0), line, font=font)[3] - d.textbbox((0, 0), line, font=font)[1] for line in lines])
+        total_text_height = sum([d.textbbox((0, 0), line, font=font)[3] - d.textbbox((0, 0), line, font=font)[1] + line_spacing for line in lines]) - line_spacing
         current_y = (height - total_text_height) / 2
 
         for line in lines:
@@ -32,7 +32,7 @@ def create_text_image(text, image_filename, size=(1080, 1920), fontsize=100, pad
             textwidth, textheight = text_bbox[2] - text_bbox[0], text_bbox[3] - text_bbox[1]
             x = (width - textwidth) / 2
             d.text((x, current_y), line, fill=(0, 0, 0), font=font)
-            current_y += textheight
+            current_y += textheight + line_spacing
 
         img_with_padding = Image.new('RGB', (width + padding*2, height + padding*2), color=(255, 255, 255))
         img_with_padding.paste(img, (padding, padding))

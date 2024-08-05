@@ -90,12 +90,6 @@ class VideoHandler(FileSystemEventHandler):
             print(f"New video file detected: {event.src_path}")
             self.process(event.src_path)
 
-    def parse_video_title(self, video_file):
-        basename = os.path.basename(video_file)
-        name, _ = os.path.splitext(basename)
-        title = re.sub(r'_', ' ', name).title()
-        return title
-
     def process(self, video_file):
         metadata_file = os.path.join('metadata', f"{os.path.splitext(os.path.basename(video_file))[0]}.json")
 
@@ -108,13 +102,13 @@ class VideoHandler(FileSystemEventHandler):
         with open(metadata_file, 'r', encoding='utf-8') as f:
             metadata = json.load(f)
         
-        # Generate the title from the video file name
-        metadata['title'] = self.parse_video_title(video_file)
+        # Directly use the title from metadata without any modification
+        # metadata['title'] should already be in the correct format from generate_metadata.py
 
         upload_video(self.youtube, video_file, metadata)
-        #os.remove(video_file)
-        #os.remove(metadata_file)
-        #print(f"Uploaded and removed {video_file} and {metadata_file}")
+        # os.remove(video_file)
+        # os.remove(metadata_file)
+        # print(f"Uploaded and removed {video_file} and {metadata_file}")
 
 def start_monitoring():
     youtube = get_authenticated_service()
