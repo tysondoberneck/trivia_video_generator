@@ -22,7 +22,7 @@ def parse_video_title(video_file):
 
 if __name__ == "__main__":
     # Simulate the video file name (You can replace this with any video filename for testing)
-    video_file = "completed_videos/computers_video_2.mp4"
+    video_file = "completed_videos/politics_video_4.mp4"
     
     # Generate the title
     video_title = parse_video_title(video_file)

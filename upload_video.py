@@ -50,6 +50,25 @@ def get_authenticated_service():
             pickle.dump(creds, token)
     return build('youtube', 'v3', credentials=creds)
 
+def parse_video_title(video_file):
+    basename = os.path.basename(video_file)
+    name, _ = os.path.splitext(basename)
+
+    # Extract the category name from the video file name
+    category_match = re.match(r'(\w+)_', name)
+    category = category_match.group(1).replace('_', ' ').title() if category_match else 'General'
+    
+    # Remove the word "Video" if it exists
+    category = category.replace('Video', '').strip()
+
+    # Find the part number
+    part_match = re.search(r'(\d+)$', name)
+    part_number = part_match.group(1) if part_match else '1'
+
+    # Generate the proper title format
+    title = f"{category} Trivia Part {part_number}"
+    return title
+
 def upload_video(youtube, video_file, metadata):
     body = dict(
         snippet=dict(
@@ -102,8 +121,8 @@ class VideoHandler(FileSystemEventHandler):
         with open(metadata_file, 'r', encoding='utf-8') as f:
             metadata = json.load(f)
         
-        # Directly use the title from metadata without any modification
-        # metadata['title'] should already be in the correct format from generate_metadata.py
+        # Generate the correct title using parse_video_title
+        metadata['title'] = parse_video_title(video_file)
 
         upload_video(self.youtube, video_file, metadata)
         # os.remove(video_file)
