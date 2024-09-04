@@ -18,8 +18,8 @@ RUN pip3 install --no-cache-dir -r requirements.txt
 # Copy the rest of the application code
 COPY . .
 
-# Expose port 8080 (optional, for monitoring purposes)
-EXPOSE 8080
+# Do not expose port 8080 because Cloud Run Jobs do not need to serve HTTP
+# EXPOSE 8080 (Comment out or remove this line)
 
 # Command to run both the Node.js script and the Python listener in parallel
 CMD ["sh", "-c", "node movie_trivia.js && python3 upload_video.py"]
