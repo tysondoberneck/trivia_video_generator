@@ -23,37 +23,45 @@ let authorizationCode = null;
 
 // Categories object with shortened names
 const categories = {
-  'any': { id: 0, fullName: 'any' },
-  'General Knowledge': { id: 9, fullName: 'General Knowledge' },
-  'Books': { id: 10, fullName: 'Entertainment: Books' },
-  'Film': { id: 11, fullName: 'Entertainment: Film' },
-  'Music': { id: 12, fullName: 'Entertainment: Music' },
-  'Musicals and Theatres': { id: 13, fullName: 'Entertainment: Musicals & Theatres' },
-  'Television': { id: 14, fullName: 'Entertainment: Television' },
-  'Video Games': { id: 15, fullName: 'Entertainment: Video Games' },
-  'Board Games': { id: 16, fullName: 'Entertainment: Board Games' },
-  'Science and Nature': { id: 17, fullName: 'Science & Nature' },
-  'Computers': { id: 18, fullName: 'Science: Computers' },
-  'Mathematics': { id: 19, fullName: 'Science: Mathematics' },
-  'Mythology': { id: 20, fullName: 'Mythology' },
-  'Sports': { id: 21, fullName: 'Sports' },
-  'Geography': { id: 22, fullName: 'Geography' },
-  'History': { id: 23, fullName: 'History' },
-  'Politics': { id: 24, fullName: 'Politics' },
-  'Art': { id: 25, fullName: 'Art' },
-  'Celebrities': { id: 26, fullName: 'Celebrities' },
-  'Animals': { id: 27, fullName: 'Animals' },
-  'Vehicles': { id: 28, fullName: 'Vehicles' },
-  'Comics': { id: 29, fullName: 'Entertainment: Comics' },
-  'Gadgets': { id: 30, fullName: 'Science: Gadgets' },
-  'Japanese Anime and Manga': { id: 31, fullName: 'Entertainment: Japanese Anime & Manga' },
-  'Cartoon and Animations': { id: 32, fullName: 'Entertainment: Cartoon & Animations' },
+  'any': { id: 0, fullName: 'any', alias: 'Random Facts' },
+  'General Knowledge': { id: 9, fullName: 'General Knowledge', alias: 'General Knowledge' },
+  'Books': { id: 10, fullName: 'Entertainment: Books', alias: 'Books' },
+  'Film': { id: 11, fullName: 'Entertainment: Film', alias: 'Film' },
+  'Music': { id: 12, fullName: 'Entertainment: Music', alias: 'Music' },
+  'Musicals and Theatres': { id: 13, fullName: 'Entertainment: Musicals & Theatres', alias: 'Musicals and Theatres' },
+  'Television': { id: 14, fullName: 'Entertainment: Television', alias: 'Television' },
+  'Video Games': { id: 15, fullName: 'Entertainment: Video Games', alias: 'Video Games' },
+  'Board Games': { id: 16, fullName: 'Entertainment: Board Games', alias: 'Board Games' },
+  'Science and Nature': { id: 17, fullName: 'Science & Nature', alias: 'Science and Nature' },
+  'Computers': { id: 18, fullName: 'Science: Computers', alias: 'Computers' },
+  'Mathematics': { id: 19, fullName: 'Science: Mathematics', alias: 'Mathematics' },
+  'Mythology': { id: 20, fullName: 'Mythology', alias: 'Mythology' },
+  'Sports': { id: 21, fullName: 'Sports', alias: 'Sports' },
+  'Geography': { id: 22, fullName: 'Geography', alias: 'Geography' },
+  'History': { id: 23, fullName: 'History', alias: 'History' },
+  'Politics': { id: 24, fullName: 'Politics', alias: 'Politics' },
+  'Art': { id: 25, fullName: 'Art', alias: 'Art' },
+  'Celebrities': { id: 26, fullName: 'Celebrities', alias: 'Celebrities' },
+  'Animals': { id: 27, fullName: 'Animals', alias: 'Animals' },
+  'Vehicles': { id: 28, fullName: 'Vehicles', alias: 'Vehicles' },
+  'Comics': { id: 29, fullName: 'Entertainment: Comics', alias: 'Comics' },
+  'Gadgets': { id: 30, fullName: 'Science: Gadgets', alias: 'Gadgets' },
+  'Japanese Anime and Manga': { id: 31, fullName: 'Entertainment: Japanese Anime & Manga', alias: 'Japanese Anime and Manga' },
+  'Cartoon and Animations': { id: 32, fullName: 'Entertainment: Cartoon & Animations', alias: 'Cartoon and Animations' },
 };
 
-// Specify category and number of questions
-const selectedCategory = 'Politics'; // Change category name here
-const category = categories[selectedCategory];
-const amount = 1; // Number of trivia questions
+// Function to randomly select a category from the categories object
+function getRandomCategory() {
+  const categoryKeys = Object.keys(categories);
+  const randomKey = categoryKeys[Math.floor(Math.random() * categoryKeys.length)];
+  return categories[randomKey];
+}
+
+// Set up a random category to be used for trivia
+const category = getRandomCategory();  // Select a random category each time
+const selectedCategory = category.alias;
+
+const amount = 3; // Number of trivia questions
 const TRIVIA_URL = `https://opentdb.com/api.php?amount=${amount}&category=${category.id}&type=multiple`;
 
 function decodeHtmlEntities(text) {

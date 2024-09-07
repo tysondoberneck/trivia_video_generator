@@ -8,3 +8,4 @@ metadata
 client_secrets.json
 cloud_upload_video.py
 token.json
+movie_trivia.log
