@@ -4,10 +4,22 @@ const fs = require('fs');
 const path = require('path');
 require('dotenv').config();
 const { OpenAI } = require('openai');
-const he = require('he');  // Import the he library
+const he = require('he');
+const { google } = require('googleapis');
+const express = require('express');
+
+// Dynamic import of open module (since it's an ES module)
+async function openUrl(url) {
+  const { default: open } = await import('open');
+  return open(url);
+}
 
 const apiKey = process.env.api_key;
 const openai = new OpenAI({ apiKey });
+
+// Express app for handling OAuth redirect
+const app = express();
+let authorizationCode = null;
 
 // Categories object with shortened names
 const categories = {
@@ -41,7 +53,7 @@ const categories = {
 // Specify category and number of questions
 const selectedCategory = 'Politics'; // Change category name here
 const category = categories[selectedCategory];
-const amount = 3; // Number of trivia questions
+const amount = 1; // Number of trivia questions
 const TRIVIA_URL = `https://opentdb.com/api.php?amount=${amount}&category=${category.id}&type=multiple`;
 
 function decodeHtmlEntities(text) {
@@ -110,7 +122,7 @@ function concatenateVideos(videoFiles, outputFilename) {
     const listFileContent = videoFiles.map(file => `file '${path.resolve(file)}'`).join('\n');
     fs.writeFileSync(listFilePath, listFileContent, 'utf8');
 
-    console.log(`videos.txt content:\n${listFileContent}`); // Log the content of videos.txt
+    console.log(`videos.txt content:\n${listFileContent}`);
 
     const command = `ffmpeg -y -f concat -safe 0 -i ${listFilePath} -c copy ${outputFilename}`;
     console.log(`Executing command: ${command}`);
@@ -146,7 +158,109 @@ function getNextFinalVideoFilename(categoryName) {
   return filename;
 }
 
-async function fetchTrivia() {
+// Google OAuth Setup
+const SCOPES = ['https://www.googleapis.com/auth/youtube.upload'];
+const credentials = {
+  client_id: process.env.CLIENT_ID,
+  client_secret: process.env.CLIENT_SECRET,
+  redirect_uris: ['http://localhost:8080'],
+  project_id: process.env.PROJECT_ID,
+  auth_uri: process.env.AUTH_URI,
+  token_uri: process.env.TOKEN_URI,
+  auth_provider_x509_cert_url: process.env.AUTH_PROVIDER_CERT_URL,
+};
+
+// Get authenticated service function
+async function getAuthenticatedService() {
+  const { client_id, client_secret } = credentials;
+  const oauth2Client = new google.auth.OAuth2(client_id, client_secret, 'http://localhost:8080');
+
+  let token;
+  if (fs.existsSync('token.json')) {
+    token = JSON.parse(fs.readFileSync('token.json'));
+    oauth2Client.setCredentials(token);
+  } else {
+    const authUrl = oauth2Client.generateAuthUrl({ access_type: 'offline', scope: SCOPES });
+    console.log(`Authorize this app by visiting this url: ${authUrl}`);
+    await openUrl(authUrl); // Dynamically open the URL
+
+    // Start express server to capture the authorization code
+    const server = app.listen(8080, () => {
+      console.log('Listening on port 8080...');
+    });
+
+    app.get('/', async (req, res) => {
+      authorizationCode = req.query.code;
+      res.send('Authorization successful! You can close this tab.');
+      const { tokens } = await oauth2Client.getToken(authorizationCode);
+      oauth2Client.setCredentials(tokens);
+      fs.writeFileSync('token.json', JSON.stringify(tokens));
+      console.log('Tokens saved successfully!');
+      server.close(); // Close the server after receiving the code
+    });
+  }
+
+  return google.youtube({ version: 'v3', auth: oauth2Client });
+}
+
+// Metadata generation function - uses the Python script
+function generateMetadata(videoFilePath) {
+  return new Promise((resolve, reject) => {
+    const command = `python generate_metadata.py ${videoFilePath}`;
+    console.log(`Executing metadata generation command: ${command}`);
+
+    exec(command, { encoding: 'utf8' }, (error, stdout, stderr) => {
+      if (error) {
+        console.error(`Error generating metadata: ${error.message}`);
+        return reject(error);
+      }
+
+      console.log(`Metadata generated: ${stdout}`);
+      const metadataFile = path.join('metadata', `${path.basename(videoFilePath, '.mp4')}.json`);
+
+      if (fs.existsSync(metadataFile)) {
+        const metadata = JSON.parse(fs.readFileSync(metadataFile, 'utf8'));
+        resolve(metadata);
+      } else {
+        reject(new Error('Metadata file not found after generation.'));
+      }
+    });
+  });
+}
+
+// Upload video to YouTube function
+async function uploadVideo(videoFilePath, metadata) {
+  const youtube = await getAuthenticatedService();
+  const videoFileName = path.basename(videoFilePath);
+  const videoTitle = metadata.title || videoFileName;
+
+  const requestBody = {
+    snippet: {
+      title: videoTitle,
+      description: metadata.description || 'Trivia video upload',
+      tags: metadata.tags || ['Trivia'],
+      categoryId: metadata.category_id || '28', // 28 = Science & Technology category
+    },
+    status: {
+      privacyStatus: metadata.privacy_status || 'public',
+    },
+  };
+
+  const videoStream = fs.createReadStream(videoFilePath);
+
+  const res = await youtube.videos.insert({
+    part: 'snippet,status',
+    requestBody,
+    media: {
+      body: videoStream,
+    },
+  });
+
+  console.log(`Video uploaded to YouTube. Video ID: ${res.data.id}`);
+}
+
+// Fetch trivia, create video, and upload to YouTube
+async function fetchTriviaAndUpload() {
   try {
     const response = await axios.get(TRIVIA_URL);
     const triviaQuestions = response.data.results;
@@ -188,13 +302,8 @@ async function fetchTrivia() {
 
       let triviaQuestion = `Question ${index + 1}: ${decodedQuestion}`;
       let optionsIntro = 'The options are:';
-
-      // Create the options text for the audio with commas, "and", and "..."
       let triviaOptionsAudio = options.slice(0, -1).join(', ') + ', and ' + options[options.length - 1] + '...';
-
-      // Create the options text for the image without commas, "and", and "..."
       let triviaOptionsText = options.map(option => `- ${option}`).join('\n');
-
       const triviaAnswer = `The correct answer is: ${decodedCorrectAnswer}`;
 
       const filenames = [
@@ -204,13 +313,11 @@ async function fetchTrivia() {
         path.join(__dirname, `media/answer_audio_${index + 1}.mp3`)
       ];
 
-      // Generate audio files
       await generateAudio(triviaQuestion, filenames[0]);
       await generateAudio(optionsIntro, filenames[1]);
       await generateAudio(triviaOptionsAudio, filenames[2]);
       await generateAudio(triviaAnswer, filenames[3]);
 
-      // Create video for each trivia question
       await createVideo(triviaQuestion, optionsIntro, triviaOptionsText, triviaAnswer, filenames, false).catch(error => {
         console.error(`Failed to create video for question ${index + 1}: ${error.message}`);
         throw error;
@@ -247,39 +354,15 @@ async function fetchTrivia() {
       throw error;
     });
 
-    // Generate metadata for the final video
-    await new Promise((resolve, reject) => {
-      const command = `python generate_metadata.py ${outputFilename}`;
-      console.log(`Executing command: ${command}`);
-      exec(command, { encoding: 'utf8' }, (error, stdout, stderr) => {
-        console.log(`Command stdout: ${stdout}`);
-        console.log(`Command stderr: ${stderr}`);
-        if (error) {
-          console.error(`Error: ${error.message}`);
-          return reject(error);
-        }
-        resolve();
-      });
-    });
+    // Generate metadata for the final video using the Python script
+    const metadata = await generateMetadata(outputFilename);
 
-    // Clean up individual video files and media folder
-    videoFiles.forEach(file => fs.unlinkSync(file));
-    fs.unlinkSync(path.join(__dirname, 'media', 'videos.txt'));
-    fs.unlinkSync(path.join(__dirname, 'media', 'question_text.txt'));
-    if (fs.existsSync(path.join(__dirname, 'media', 'options_intro_text.txt'))) {
-      fs.unlinkSync(path.join(__dirname, 'media', 'options_intro_text.txt'));
-    }
-    if (fs.existsSync(path.join(__dirname, 'media', 'options_text.txt'))) {
-      fs.unlinkSync(path.join(__dirname, 'media', 'options_text.txt'));
-    }
-    fs.unlinkSync(path.join(__dirname, 'media', 'answer_text.txt'));
-    fs.unlinkSync(path.join(__dirname, 'media', 'intro_audio.mp3'));
-    fs.unlinkSync(path.join(__dirname, 'media', 'outro_audio.mp3'));
+    // Upload the final video to YouTube
+    await uploadVideo(outputFilename, metadata);
 
-    console.log(`Final video created: ${outputFilename}`);
   } catch (error) {
-    console.error('Error fetching trivia:', error);
+    console.error('Error fetching trivia or uploading:', error);
   }
 }
 
-fetchTrivia();
+fetchTriviaAndUpload();

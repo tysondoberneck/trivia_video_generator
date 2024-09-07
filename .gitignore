@@ -7,3 +7,4 @@ __pycache__
 metadata
 client_secrets.json
 cloud_upload_video.py
+token.json
